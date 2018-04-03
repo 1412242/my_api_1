@@ -1,0 +1,39 @@
+import { Component, OnInit } from '@angular/core';
+import { Container } from '../base-classes/container';
+import {XAxis} from '../layers/x-axis';
+import {YAxis} from '../layers/y-axis';
+import { StackedBar } from '../layers/stacked-bar';
+import { exampleData } from './data';
+import { Legend } from '../layers/legend';
+import * as d3 from 'd3';
+
+@Component({
+  selector: 'app-stacked-bar-chart',
+  templateUrl: './stacked-bar-chart.component.html',
+  styleUrls: ['./stacked-bar-chart.component.scss']
+})
+export class StackedBarChartComponent implements OnInit {
+
+  constructor() { }
+
+  ngOnInit() {
+    //Convert data
+    let keys = Object.getOwnPropertyNames(exampleData[0]).slice(1);
+    var maxValue = [];
+    exampleData.forEach(v => {
+      maxValue.push(keys.map(key => v[key]).reduce((a, b) => a + b, 0));
+    });
+    var a = new Container('svg', exampleData,['	#ff0000', '	#80ff00', '#ff00ff']);
+    a.setLayer([
+      new XAxis(exampleData.map((d : any) => d.Room)),
+      new YAxis([0,d3.max(maxValue)]),
+      new StackedBar(
+        exampleData.map((d : any) => d.Room),
+        [0,d3.max(maxValue)],
+        'Room'),
+      // new Legend()
+    ])
+    a.draw(exampleData);
+  }
+
+}
