@@ -1,0 +1,179 @@
+//x axis
+
+/**
+ * Class to draw x-axis
+ */
+import * as d3 from 'd3';
+import { Layer } from '../base-classes/layer';
+import { Container } from '../base-classes/container';
+
+export class YAxis extends Layer{
+    private isRight : boolean;
+    private domainRange : any[];
+
+    constructor(domainRange, attr=null, isRight=false) {
+        super();
+        this.isRight = isRight;
+        this.domainRange = domainRange;
+    }
+    public render(container : Container) : void {
+        super.render(container);
+        container.yScale.domain(this.domainRange).nice();
+
+        if (this.isRight) {
+            let yAxis = container.area.append("g")
+                                      .attr("class", "axis")
+                                      .call(d3.axisRight(container.yScale));
+            yAxis.attr("transform", "translate(" + (container.size.width - container.margin.right - container.margin.left) + ",0)");
+        }
+        else {
+            let yAxis = container.area.append("g")
+                                      .attr("class", "axis")
+                                      .call(d3.axisLeft(container.yScale));
+        }
+    }
+}
+
+
+//yaxis
+
+/**
+ * Class to draw x-axis
+ */
+import * as d3 from 'd3';
+import { Layer } from '../base-classes/layer';
+import { Container } from '../base-classes/container';
+
+export class XAxis extends Layer{
+    private isTop : boolean;
+    private domainRange : any[];
+
+    constructor(domainRange, isTop=false) {
+        super();
+        this.isTop = isTop;
+        this.domainRange = domainRange;
+    }
+
+    public render(container : Container) : void {
+        super.render(container);
+        container.xScale.domain(this.domainRange)
+        let yPosition = container.size.height - container.margin.bottom;
+        if (this.isTop) {
+            let yPosition = 0;
+            container.area.append("g")
+                          .attr("class", "axis")
+                          .attr("transform", "translate(0," + yPosition + ")")
+                          .call(d3.axisTop(container.xScale));
+        } else {
+            container.area.append("g")
+                          .attr("class", "axis")
+                          .attr("transform", "translate(0," + yPosition + ")")
+                          .call(d3.axisBottom(container.xScale));
+        }
+    }
+}
+
+//stacked - bar
+/**
+ * Class to draw stacked bar
+ */
+import * as d3 from 'd3';
+import { Layer } from '../base-classes/layer';
+import { Container } from '../base-classes/container';
+
+export class StackedBar extends Layer{
+    private xDomainRange : any[];
+    private yDomainRange : any[];
+    private xKey : string;
+
+    constructor(xDomainRange, yDomainRange, xKey) {
+        super();
+        this.xDomainRange = xDomainRange;
+        this.yDomainRange = yDomainRange;
+        this.xKey = xKey;
+    }
+
+    public render(container : Container) : void {
+        super.render(container);
+        this.setDomain(container);
+        //Draw
+        console.log(d3.stack().keys(this.keys)(container.data))
+        var g = container.area.append('g');
+        g.selectAll('g')
+          .append('g')
+          .data(d3.stack().keys(this.keys)(container.data))
+          .enter().append('g')
+          .attr('fill', d => container.zScale(this.keys.indexOf(d.key)))
+          .selectAll('rect')
+          .data(d => d)
+          .enter().append('rect')
+          .attr('x', d => container.xScale(d.data[this.xKey]))
+          .attr('y', d => container.yScale(d[1]))
+          .attr("height", d => container.yScale(d[0]) - container.yScale(d[1]))
+          .attr("width", container.xScale.bandwidth());
+    }
+
+    private setDomain(container : Container) : void {
+        container.xScale.domain(this.xDomainRange);
+        container.yScale.domain(this.yDomainRange).nice();
+        container.zScale.domain(this.keys.length)
+    }
+
+
+}
+
+// legend
+/**
+ * Class to draw x-axis
+ */
+import * as d3 from 'd3';
+import { Layer } from '../base-classes/layer';
+import { Container } from '../base-classes/container';
+
+export class Legend extends Layer{
+    private isRight : boolean;
+
+    constructor(isRight=false) {
+        super();
+        this.isRight = isRight;
+    }
+    public render(container : Container) : void {
+        super.render(container);
+        container.zScale.domain(this.keys.length);
+        var xPosition = container.size.width - (container.margin.right/2);
+        var yPosition = 0;
+
+        if (!this.isRight) {
+            xPosition = 0;
+            yPosition = (container.size.height - container.margin.bottom/2);
+        }
+
+        var g = container.area.append('g')
+                              .attr("text-anchor", "end")
+                              .attr("transform", "translate(" + xPosition + "," + yPosition + ")");
+
+        if (this.isRight) {
+            var legend = g.selectAll('g').append("g")
+                          .data(this.keys.slice().reverse())
+                          .enter().append("g")
+                          .attr("transform",  (d, i) => "translate(0," + i * 20 + ")");
+        } else {
+            var legend = g.selectAll('g').append("g")
+                          .data(this.keys.slice().reverse())
+                          .enter().append("g")
+                          .attr("transform",  (d, i) => "translate(" + i * 60 + ",0)");
+        }
+
+        legend.append("rect")
+            .data(d3.stack().keys(this.keys)(container.data))
+            .attr("width", 19)
+            .attr("height", 19)
+            .attr("fill", d => container.zScale(this.keys.indexOf(d.key)));
+
+        legend.append("text")
+            .data(d3.stack().keys(this.keys)(container.data))
+            .attr("dy", "0.32em")
+            .text(d => d.key);
+    }
+}
+
