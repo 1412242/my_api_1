@@ -1,0 +1,127 @@
+//interface
+
+/**
+ * Object to store margin's value
+ */
+
+export interface Margin {
+    top : number;
+    right : number;
+    bottom : number;
+    left : number;
+}
+
+export interface Size {
+    width : number;
+    height : number;
+}
+
+
+//container
+/**
+ * Class for container that contains many layer to draw a chart
+ */
+import * as d3 from 'd3';
+import { Margin, Size } from './base-interface';
+import { Layer } from './layer';
+
+ export class Container {
+    // Size of SVG
+    size : Size;
+    margin : Margin;
+    area : any;
+
+    // d3-Scale
+    xScale : any;
+    yScale : any;
+    zScale : any;
+
+    data : any;
+
+    // Array of layer in container
+    private layers : Layer[];
+
+    constructor(selector : string, data, zColor : any[] = null) {
+        // Initial value for svg's size
+        this.size = {
+            width: +d3.select(selector).attr('width'),
+            height: +d3.select(selector).attr('height') }
+        this.margin = {top: 20, right: 80, bottom: 50, left: 40};
+
+        //Create area to draw chart
+        this.area = d3.select(selector)
+                      .append('g')
+                      .attr('width', this.size.width - this.margin.left - this.margin.right)
+                      .attr('height', this.size.height - this.margin.top - this.margin.bottom)
+                      .attr('transform', "translate(" + this.margin.left + "," + this.margin.top + ")")
+
+        // Initial value for scale
+        this.xScale = d3.scaleBand()
+                .rangeRound([0, this.size.width - this.margin.right - this.margin.left])
+                .paddingInner(0.05)
+                .align(0.1);
+        this.yScale = d3.scaleLinear()
+                .rangeRound([this.size.height - this.margin.bottom, 0]);
+        if (zColor) {
+            this.zScale = d3.scaleOrdinal(zColor);
+        }
+        else {
+            this.zScale = d3.scaleOrdinal(d3.schemeCategory10);
+        }
+
+        // Initial Data
+        this.data = data
+    };
+
+    //Set layer of the chart
+    public setLayer(layers : Layer[]) {
+        this.layers = layers;
+    }
+
+    public draw(data) : void {
+        this.layers.forEach(element => {
+            element.render(this)
+        });
+    }
+
+    /**
+     * Methods to set Scale when customize its
+     */
+
+    public setXScale(xScale : any)  : void {
+        this.xScale = xScale;
+    }
+
+    public setYScale(yScale : any)  : void {
+        this.yScale = yScale;
+    }
+
+    public setZScale(zScale : any)  : void {
+        this.zScale = zScale;
+    }
+ }
+ 
+ //layer
+ /**
+ * Base layer to draw each layer of the chart
+ */
+
+import { Margin, Size } from './base-interface';
+import { Container } from './container';
+
+export class Layer {
+    keys : string[];
+
+    /**
+     * Data must be a array object with keys in the first element of each object.
+     * Must convert data before draw anything
+     */
+    public render(instance : Container) : void {
+        this.setListKeys(instance.data);
+    }
+
+    private setListKeys(data) : void {
+        this.keys = Object.getOwnPropertyNames(data[0]).slice(1);
+    }
+}
+
