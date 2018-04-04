@@ -17,7 +17,6 @@ export interface Size {
 }
 
 
-//container
 /**
  * Class for container that contains many layer to draw a chart
  */
@@ -37,16 +36,17 @@ import { Layer } from './layer';
     zScale : any;
 
     data : any;
+    tooltip : any;
 
     // Array of layer in container
     private layers : Layer[];
 
-    constructor(selector : string, data, zColor : any[] = null) {
+    constructor(selector : string, data, margin : Margin, zColor : any[] = null) {
         // Initial value for svg's size
         this.size = {
             width: +d3.select(selector).attr('width'),
             height: +d3.select(selector).attr('height') }
-        this.margin = {top: 20, right: 80, bottom: 50, left: 40};
+        this.margin = margin;
 
         //Create area to draw chart
         this.area = d3.select(selector)
@@ -62,6 +62,7 @@ import { Layer } from './layer';
                 .align(0.1);
         this.yScale = d3.scaleLinear()
                 .rangeRound([this.size.height - this.margin.bottom, 0]);
+
         if (zColor) {
             this.zScale = d3.scaleOrdinal(zColor);
         }
@@ -70,7 +71,7 @@ import { Layer } from './layer';
         }
 
         // Initial Data
-        this.data = data
+        this.data = data;
     };
 
     //Set layer of the chart
@@ -78,9 +79,9 @@ import { Layer } from './layer';
         this.layers = layers;
     }
 
-    public draw(data) : void {
+    public draw(data, keysExclude : string[] = []) : void {
         this.layers.forEach(element => {
-            element.render(this)
+            element.render(this, keysExclude)
         });
     }
 
@@ -99,9 +100,26 @@ import { Layer } from './layer';
     public setZScale(zScale : any)  : void {
         this.zScale = zScale;
     }
+    // Prep the tooltip bits, initial display is hidden
+    public prepareTooltip(): void {
+
+        this.tooltip = this.area.append("g")
+        .style("display", "none");
+
+        this.tooltip.append("rect")
+        .attr("width", 50)
+        .attr("height", 15)
+        .attr("fill", "white");
+
+        this.tooltip.append("text")
+        .attr('x', '5')
+        .attr("dy", "+1em")
+        .style("text-anchor", "start")
+        .attr("font-size", "12px")
+        .attr("font-weight", "bold");
+    }
  }
  
- //layer
  /**
  * Base layer to draw each layer of the chart
  */
@@ -116,12 +134,17 @@ export class Layer {
      * Data must be a array object with keys in the first element of each object.
      * Must convert data before draw anything
      */
-    public render(instance : Container) : void {
-        this.setListKeys(instance.data);
+    public render(instance : Container, keysExclude : string[] = []) : void {
+        this.setListKeys(instance.data, keysExclude);
     }
 
-    private setListKeys(data) : void {
-        this.keys = Object.getOwnPropertyNames(data[0]).slice(1);
+    private setListKeys(data, keysExclude : string[]) : void {
+        this.keys = Object.getOwnPropertyNames(data[0]);
+        for (let i = 0; i < keysExclude.length; i++) {
+            if ((this.keys.indexOf(keysExclude[i]) > -1)) {
+                this.keys.splice(this.keys.indexOf(keysExclude[i]), 1);
+            }
+        }
     }
 }
 
