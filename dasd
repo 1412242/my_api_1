@@ -1,0 +1,53 @@
+/**
+ * Class to draw stacked bar
+ */
+import * as d3 from 'd3';
+import { Layer } from '../base-classes/layer';
+import { Container } from '../base-classes/container';
+
+export class StackedBar extends Layer{
+    private xDomainRange : any[];
+    private yDomainRange : any[];
+    private xKey : string;
+    private textScale : any;
+
+    constructor(xDomainRange, yDomainRange, xKey) {
+        super();
+        this.xDomainRange = xDomainRange;
+        this.yDomainRange = yDomainRange;
+        this.xKey = xKey;
+    }
+
+    public render(container : Container) : void {
+        super.render(container);
+        this.setDomain(container);
+        var that = this;
+
+        //Draw
+        var g = container.area.append('g').attr('class', 'chart');
+        var rect = g.selectAll('g')
+          .append('g')
+          .data(d3.stack().keys(this.keys)(container.data))
+          .enter().append('g')
+          .attr('class', 'stacked-bar')
+          .attr('fill', d => container.zScale(this.keys.indexOf(d.key)))
+          .attr('data-idx', function(d, i) { return i; });
+
+        //Draw stacked bar
+        rect.selectAll('rect')
+          .data(d => d)
+          .enter().append('rect')
+          .attr('x', d => container.xScale(d.data[this.xKey]))
+          .attr('y', d => container.yScale(d[1])).transition().duration(1000)
+          .attr("height", d => container.yScale(d[0]) - container.yScale(d[1]))
+          .attr("width", container.xScale.bandwidth());
+    }
+
+    private setDomain(container : Container) : void {
+        container.xScale.domain(this.xDomainRange);
+        container.yScale.domain(this.yDomainRange).nice();
+        container.zScale.domain(this.keys.length)
+    }
+
+
+}
