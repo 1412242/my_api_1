@@ -1,0 +1,54 @@
+import * as d3 from 'd3';
+import { Layer } from '../base-classes/layer';
+import { Container } from '../base-classes/container';
+
+export class HorizontalStackedBar extends Layer{
+    private xDomainRange : any[];
+    private yDomainRange : any[];
+    private yKey : string;
+
+    constructor(xDomainRange, yDomainRange, yKey) {
+        super();
+        this.xDomainRange = xDomainRange;
+        this.yDomainRange = yDomainRange;
+        this.yKey = yKey;
+    }
+
+    public render(container : Container, keysExclude : string[] = []) : void {
+        super.render(container, keysExclude);
+        this.setDomain(container);
+        var that = this;
+        //Draw
+        var g = container.area.append('g').attr('id', 'chart');
+        var rect = g.selectAll('g')
+          .append('g')
+          .data(d3.stack().keys(this.keys)(container.data))
+          .enter().append('g')
+          .attr('class', 'stacked-bar')
+          .attr('fill', d => container.zScale(this.keys.indexOf(d.key)))
+          .attr('data-idx', function(d, i) { return i; });
+
+        //Draw stacked bar
+        rect.selectAll('rect')
+          .data(d => d)
+          .enter().append('rect')
+          .attr('x', d => container.xScale(d[0]))
+          .attr('y', d => container.yScale(this.yKey))
+          .attr("height", container.yScale.bandwidth)
+          .attr("width", d => container.xScale(d[1]) - container.xScale(d[0]) - 3);
+    }
+
+    private setDomain(container : Container) : void {
+        container.setXScale(
+            d3.scaleLinear()
+            .rangeRound([0, container.size.width - container.margin.left - container.margin.right])
+            .domain(this.xDomainRange));
+        container.setYScale(
+            d3.scaleBand()
+            .rangeRound([container.size.height - container.margin.bottom - container.margin.top, 0])
+            .domain(this.yDomainRange));
+        container.zScale.domain(this.keys.length)
+    }
+
+
+}
