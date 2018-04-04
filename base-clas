@@ -36,12 +36,13 @@ import { Layer } from './layer';
     zScale : any;
 
     data : any;
+    keys : string[];
     tooltip : any;
 
     // Array of layer in container
     private layers : Layer[];
 
-    constructor(selector : string, data, margin : Margin, zColor : any[] = null) {
+    constructor(selector : string, data, margin : Margin, keys : string[] = null, zColor : any[] = null) {
         // Initial value for svg's size
         this.size = {
             width: +d3.select(selector).attr('width'),
@@ -72,6 +73,7 @@ import { Layer } from './layer';
 
         // Initial Data
         this.data = data;
+        this.keys = keys;
     };
 
     //Set layer of the chart
@@ -107,8 +109,8 @@ import { Layer } from './layer';
         .style("display", "none");
 
         this.tooltip.append("rect")
-        .attr("width", 50)
-        .attr("height", 15)
+        .attr("width", width)
+        .attr("height", height)
         .attr("fill", "white");
 
         this.tooltip.append("text")
@@ -128,23 +130,11 @@ import { Margin, Size } from './base-interface';
 import { Container } from './container';
 
 export class Layer {
-    keys : string[];
-
     /**
      * Data must be a array object with keys in the first element of each object.
      * Must convert data before draw anything
      */
-    public render(instance : Container, keysExclude : string[] = []) : void {
-        this.setListKeys(instance.data, keysExclude);
-    }
-
-    private setListKeys(data, keysExclude : string[]) : void {
-        this.keys = Object.getOwnPropertyNames(data[0]);
-        for (let i = 0; i < keysExclude.length; i++) {
-            if ((this.keys.indexOf(keysExclude[i]) > -1)) {
-                this.keys.splice(this.keys.indexOf(keysExclude[i]), 1);
-            }
-        }
+    public render(instance : Container) : void {
     }
 }
 
