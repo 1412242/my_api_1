@@ -1,0 +1,4 @@
+- move keys to containers, create service to get keys and exclude key
+ - move draw text and tololtip to layer
+ - implement horizontal bar from stackedbar
+ - clean component
