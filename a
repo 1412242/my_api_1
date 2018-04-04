@@ -1,0 +1,173 @@
+import { Component, OnInit } from '@angular/core';
+import { Container } from '../base-classes/container';
+import { XAxis } from '../layers/x-axis';
+import { YAxis } from '../layers/y-axis';
+import { HorizontalStackedBar } from '../layers/horizontal-stacked-bar';
+import { exampleData } from './data';
+import { Legend } from '../layers/legend';
+import * as d3 from 'd3';
+
+@Component({
+  selector: 'app-horizontal-stacked-bar-chart',
+  templateUrl: './horizontal-stacked-bar-chart.component.html',
+  styleUrls: ['./horizontal-stacked-bar-chart.component.scss']
+})
+export class HorizontalStackedBarChartComponent implements OnInit {
+  totalSeat = "asdsad";
+  typeSeat = [];
+
+  constructor() { }
+
+  ngOnInit() {
+    if (!(exampleData instanceof Array)) {
+      var data = [exampleData];
+    }
+    else {
+      var data : any[]= exampleData;
+    }
+    var stackedBarChart = new Container(
+      'svg',
+      data,
+      {top: 20, right: 80, bottom: 300, left: 40},
+      ["#244163", "#5083BC", "#D9D9D9"]
+    );
+    this.totalSeat = data[0]['totalAssignedSeat'];
+    this.typeSeat = [
+      {
+        'type': "Anchored Seat",
+        'seats': data[0]['rateOfAnchoredSeat'],
+      },
+      {
+        'type': "Semi Mobile Seat",
+        'seats': data[0]['rateOfSemiMobileSeat'],
+      },
+      {
+        'type': "Mobile Seat",
+        'seats': data[0]['rateOfMobileSeat'],
+      },
+    ]
+
+    stackedBarChart.setLayer([
+      new HorizontalStackedBar(
+        [0,100],
+        ['Seat'],
+        'Seat',
+      ),
+    ]);
+    stackedBarChart.draw(data, [
+      "totalAssignedSeat","numberOfMobileSeat", "numberOfSemiMobileSeat", "numberOfAnchoredSeat"
+    ]);
+    this.drawLegend(stackedBarChart, [
+      {
+        'name': "Mobile Seat",
+        'percentKey': "rateOfMobileSeat",
+        'seatKeys': "numberOfMobileSeat",
+      },
+      {
+        'name': "Semi Mobile Seat",
+        'percentKey': "rateOfMobileSeat",
+        'seatKeys': "numberOfSemiMobileSeat",
+      },
+      {
+        'name': "Anchored Seat",
+        'percentKey': "rateOfAnchoredSeat",
+        'seatKeys': "numberOfAnchoredSeat",
+      },
+    ])
+    this.customizeChart(stackedBarChart, [
+      {
+        'name': "Mobile Seat",
+        'percentKey': "rateOfMobileSeat",
+        'seatKeys': "numberOfMobileSeat",
+      },
+      {
+        'name': "Semi Mobile Seat",
+        'percentKey': "rateOfMobileSeat",
+        'seatKeys': "numberOfSemiMobileSeat",
+      },
+      {
+        'name': "Anchored Seat",
+        'percentKey': "rateOfAnchoredSeat",
+        'seatKeys': "numberOfAnchoredSeat",
+      },
+    ])
+  }
+  private customizeChart(container : Container, keys : any[]) : void {
+      // Draw text
+      let textColor = ["#ffffff", "#ffffff", "#000000"];
+      let textScale : any;
+      textScale = d3.scaleOrdinal(textColor);
+      textScale.domain(3);
+
+      let rect = container.area.selectAll('g.stacked-bar');
+      rect.selectAll('text')
+      .data(d => d)
+      .enter().append('text')
+      .text(function(d) {
+          if (d[1] - d[0] > 5)
+          return d[1] - d[0] + '%';
+      })
+      .attr("text-anchor", "middle")
+      .attr("alignment-baseline", "central")
+      .attr('fill', function() {
+          return textScale(+this.parentNode.getAttribute("data-idx"));
+      })
+      .attr('y', d => container.yScale("Seat") + container.yScale.bandwidth() / 2)
+      .attr('x', d => container.xScale(d[1]) + (container.xScale(d[0]) - container.xScale(d[1]))/2)
+
+    // Draw tooltip
+    container.prepareTooltip();
+    rect.selectAll('rect, text')
+        .on("mouseover", function() { container.tooltip.style("display", null); })
+        .on("mouseout", function() { container.tooltip.style("display", "none"); })
+        .on("mousemove", function(d) {
+            var xPosition = d3.mouse(this)[0] - 15;
+            var yPosition = d3.mouse(this)[1] - 25;
+            container.tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
+            container.tooltip.select("rect").attr("width", function () {
+              let label = keys[+d3.event.target.parentNode.getAttribute("data-idx")] + " : ";
+              return (label + (d[1] - d[0]) + "%").length*7;
+            });
+            container.tooltip.select("text").text(function() {
+              let label = keys[+d3.event.target.parentNode.getAttribute("data-idx")].name + " : ";
+              return label + (d[1] - d[0]) + "%";
+            });
+        });
+
+    var borderPath = container.area.select("g.chart")
+        .append('rect')
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("height", container.size.height)
+        .attr("width", container.size.width)
+        .style("stroke", "black")
+        .style("fill", "none")
+        .style("stroke-width", 1);
+  }
+  /* Will draw the legend */
+  private drawLegend(container : Container, keys : any[]): void {
+    let legend = container.area.append("g")
+          .attr("font-family", "sans-serif")
+          .attr("font-size", 14)
+          .attr("text-anchor", "start")
+          .attr("transform", function () {
+            return "translate(" + container.size.width/4 + "," + (+this.parentNode.getAttribute('height') +20) + ")"
+          })
+          .attr("alignment-baseline", "central")
+          .selectAll("g")
+          .data(keys.slice().reverse())
+          .enter().append("g")
+          .attr("transform", (d, i) => "translate(0," + i * 25 + ")");
+
+      legend.append("rect")
+          .data(keys.slice().reverse())
+          .attr('x', 0).attr('y', 0)
+          .attr("width", 19).attr('height', 19)
+          .attr("fill", d => container.zScale(keys.indexOf(d)));
+      legend.append("text")
+          .attr('x', 25).attr('y', 10)
+          .attr("alignment-baseline", "central")
+          .text(d => {console.log(container.data[0]);
+            return container.data[0][d.percentKey] + "% " + d.name + " (" + container.data[0][d.seatKeys] + ")"});
+  }
+}
